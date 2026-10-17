@@ -640,7 +640,7 @@ namespace DreamSkin
         private void Log(string msg)
         {
             if (log.InvokeRequired) { log.BeginInvoke(new Action(() => Log(msg))); return; }
-            foreach (string raw in msg.Replace("\r", "").Split('\n'))
+            foreach (string raw in msg.Replace("\r", "").Split(new char[] { '\n' }))
             {
                 if (raw.Trim().Length == 0) continue;
                 Color c = Theme.Muted;
