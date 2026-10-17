@@ -1,13 +1,29 @@
-// 由预设配色 + 可选壁纸生成 Cherry 自定义 CSS。GUI 下拉框的 5 个 key 都在这里。
+// 由预设配色 + 可选壁纸生成 Cherry Studio v2 自定义 CSS。
+//
+// 设计目标对齐原型 Codex Dream Skin：一张 16:9 壁纸铺满整个窗口，原生控件全部保留，
+// 只把“外壳层”变透明，再给需要读字的区域加渐变遮罩 / 磨砂，保证文字清楚。
+//
+// 选择器全部来自 Cherry Studio v2.1.4 源码（CherryHQ/cherry-studio tag v2.1.4）：
+//   外壳根节点   div.h-screen.w-screen.bg-sidebar      (components/layout/AppShell.tsx)
+//   图标栏       #app-sidebar / [data-ui="app.sidebar"]
+//   标签栏       [data-ui="app.tab-bar"]
+//   内容卡片     main[data-ui="app.content"]  (自带 bg-background + 圆角边框)
+//   聊天页       #chat[data-ui="chat.view"]   (ConversationShell，自带 bg-background)
+//   中间聊天区   [data-ui="part:conversation-main"]
+//   消息列表     #messages / [data-ui="chat.message-list"]
+//   助手/话题栏  [class*="resource-list-pane"] / [data-ui="chat.topic-list"]
+//   输入框       #inputbar[data-ui="chat.composer"]  (自带 bg-card)
+//   主题变量     :root / .dark 上的 Shadcn 变量 (--background --card --primary --chat-user ...)
+// 不使用任何 V1 选择器（.ant-layout、#content-container 的旧写法、--color-background 等）。
 import { readFileSync, statSync } from 'node:fs';
 import { extname } from 'node:path';
 
 export const CHERRY_PRESETS = {
-  'dark-gold':    { name: '黑金磨砂',     dark: true,  bg: '#0e0e12', panel: '16,16,20',   bubble: '22,22,28',   accent: '#c8a55a', accentText: '#111111', text: '#f0f0f0' },
-  'cyber-blue':   { name: '赛博霓虹蓝',   dark: true,  bg: '#070b18', panel: '10,16,34',   bubble: '14,22,44',   accent: '#3fa9ff', accentText: '#05101f', text: '#e6f2ff' },
-  'teal-tech':    { name: '极客蓝绿',     dark: true,  bg: '#05201f', panel: '8,40,38',    bubble: '10,50,48',   accent: '#2fd3b5', accentText: '#04211d', text: '#e2fbf6' },
-  'anime-purple': { name: '二次元柔紫',   dark: true,  bg: '#1a1325', panel: '38,26,52',   bubble: '48,34,66',   accent: '#c59bff', accentText: '#1a0f2a', text: '#f6eeff' },
-  'warm-cream':   { name: '淡雅护眼奶白', dark: false, bg: '#f3e7d3', panel: '250,244,232', bubble: '255,251,243', accent: '#a07a3c', accentText: '#ffffff', text: '#3a2f22' },
+  'dark-gold':    { name: '黑金磨砂',     dark: true,  bg: '#0e0d0c', panel: '20,18,16',    bubble: '28,25,21',    accent: '#c8a55a', accentText: '#141109', text: '#f3ead7', muted: '#b5a386' },
+  'cyber-blue':   { name: '赛博霓虹蓝',   dark: true,  bg: '#070b18', panel: '10,16,34',    bubble: '15,24,48',    accent: '#3fa9ff', accentText: '#05101f', text: '#e6f2ff', muted: '#8fa8c8' },
+  'teal-tech':    { name: '极客蓝绿',     dark: true,  bg: '#05201f', panel: '7,34,33',     bubble: '10,46,44',    accent: '#2fd3b5', accentText: '#04211d', text: '#e2fbf6', muted: '#86bdb2' },
+  'anime-purple': { name: '二次元柔紫',   dark: true,  bg: '#1a1325', panel: '34,24,48',    bubble: '46,33,64',    accent: '#c59bff', accentText: '#1a0f2a', text: '#f6eeff', muted: '#b9a6d4' },
+  'warm-cream':   { name: '淡雅护眼奶白', dark: false, bg: '#f3e7d3', panel: '250,244,232', bubble: '255,251,243', accent: '#a07a3c', accentText: '#ffffff', text: '#3a2f22', muted: '#7d6b55' },
 };
 CHERRY_PRESETS['soft-cream'] = CHERRY_PRESETS['warm-cream'];
 
@@ -25,77 +41,143 @@ export function imageDataUri(path) {
   return `data:${mime};base64,${readFileSync(path).toString('base64')}`;
 }
 
-export function buildCherryCss(presetKey = 'dark-gold', imageUri = '') {
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+  return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+}
+
+const clampPct = (v, d) => (Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : d);
+
+/**
+ * @param {string} presetKey
+ * @param {string} imageUri  data: URI，空串 = 只用配色
+ * @param {{focusX?: number, focusY?: number}} [opts] 壁纸焦点（百分比，默认居中偏上 50/40）
+ */
+export function buildCherryCss(presetKey = 'dark-gold', imageUri = '', opts = {}) {
   const p = CHERRY_PRESETS[presetKey];
   if (!p) throw new Error('未知预设：' + presetKey + '，可选：' + Object.keys(CHERRY_PRESETS).join(', '));
   const a = (rgb, alpha) => `rgba(${rgb}, ${alpha})`;
+  const accent = hexToRgb(p.accent);
   const shade = p.dark ? '0,0,0' : '255,255,255';
-  const line = p.dark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)';
-  const wallpaper = imageUri
-    ? `linear-gradient(${a(shade, p.dark ? 0.35 : 0.25)}, ${a(shade, p.dark ? 0.35 : 0.25)}), url("${imageUri}") center / cover no-repeat fixed`
-    : p.bg;
+  const line = p.dark ? 'rgba(255,255,255,0.10)' : 'rgba(60,40,10,0.12)';
+  const focus = `${clampPct(opts.focusX, 50)}% ${clampPct(opts.focusY, 40)}%`;
 
-  return `/* ===== Cherry Dream Skin 2.0 · ${p.name} (${presetKey}) ===== */
-body {
+  // 有壁纸：左侧（图标栏 + 助手栏）压暗一些，右侧尽量露图；没壁纸：配色底 + 强调色柔光。
+  const scrim = p.dark
+    ? `linear-gradient(90deg, ${a(shade, 0.62)} 0%, ${a(shade, 0.38)} 28%, ${a(shade, 0.22)} 60%, ${a(shade, 0.30)} 100%)`
+    : `linear-gradient(90deg, ${a(shade, 0.70)} 0%, ${a(shade, 0.45)} 28%, ${a(shade, 0.30)} 60%, ${a(shade, 0.38)} 100%)`;
+  const wallpaper = imageUri
+    ? `${scrim}, url("${imageUri}") ${focus} / cover no-repeat fixed, ${p.bg}`
+    : `radial-gradient(1200px 700px at 85% 10%, ${a(accent, p.dark ? 0.16 : 0.12)}, transparent 60%), radial-gradient(900px 600px at 0% 100%, ${a(accent, p.dark ? 0.10 : 0.08)}, transparent 60%), ${p.bg}`;
+
+  // 读字区遮罩强度：有图时适中，无图时更实。
+  const mainTint = imageUri ? (p.dark ? 0.50 : 0.58) : (p.dark ? 0.35 : 0.45);
+  const paneTint = imageUri ? (p.dark ? 0.46 : 0.55) : (p.dark ? 0.55 : 0.60);
+
+  return `/* ===== Cherry Dream Skin 2.0 · ${p.name} (${presetKey}) · for Cherry Studio v2 ===== */
+
+/* 0. 主题变量：亮/暗模式都套同一套配色，弹窗、卡片、菜单保持实心不透明 */
+:root:root, :root.dark {
+  --background: ${p.bg};
+  --foreground: ${p.text};
+  --card: rgb(${p.bubble});
+  --card-foreground: ${p.text};
+  --popover: rgb(${p.bubble});
+  --popover-foreground: ${p.text};
+  --primary: ${p.accent};
+  --primary-foreground: ${p.accentText};
+  --secondary: ${a(p.bubble, 0.9)};
+  --secondary-foreground: ${p.text};
+  --muted: ${a(p.bubble, 0.85)};
+  --muted-foreground: ${p.muted};
+  --accent: ${a(accent, p.dark ? 0.16 : 0.14)};
+  --accent-foreground: ${p.text};
+  --border: ${line};
+  --input: ${line};
+  --ring: ${a(accent, 0.55)};
+  --sidebar: ${a(p.panel, 0.55)};
+  --sidebar-foreground: ${p.text};
+  --sidebar-primary: ${p.accent};
+  --sidebar-primary-foreground: ${p.accentText};
+  --sidebar-accent: ${a(accent, p.dark ? 0.16 : 0.14)};
+  --sidebar-accent-foreground: ${p.text};
+  --sidebar-border: ${line};
+  --sidebar-ring: ${a(accent, 0.55)};
+  --chat-user: ${a(accent, p.dark ? 0.16 : 0.12)};
+  --code-block: ${p.dark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.75)'};
+  --inline-code: ${p.dark ? 'rgba(0,0,0,0.35)' : 'rgba(60,40,10,0.08)'};
+  --resource-list-row-active: ${a(accent, p.dark ? 0.20 : 0.16)};
+  --resource-list-row-selected: ${a(accent, p.dark ? 0.20 : 0.16)};
+  --resource-list-row-hover: ${a(shade, p.dark ? 0.18 : 0.35)};
+}
+
+/* 1. 整窗壁纸：只给主窗口（有 #app-sidebar 的窗口），划词工具条 / 快捷助手等小窗不受影响 */
+body:has(#app-sidebar) {
   background: ${wallpaper} !important;
   color: ${p.text};
 }
 
-/* 1. 打通主布局与聊天区的不透明底色，让壁纸贯穿（只针对布局容器，不碰弹窗和代码块） */
-#root, #app, #root > div, .ant-layout, .ant-layout-has-sider, .ant-layout-content, main,
-[class*="chat-container"], [class*="conversation-container"], [class*="message-list"], [class*="chat-main"],
-#root .bg-background, #root .bg-card {
+/* 2. 外壳层全部透明，让壁纸从图标栏一直贯穿到聊天区 */
+body:has(#app-sidebar) .h-screen.w-screen,
+#app-sidebar,
+[data-ui="app.sidebar"],
+[data-ui="app.tab-bar"],
+[data-ui="chat.view"],
+#chat,
+#home-page,
+[data-ui="chat.message-list"],
+[data-ui="chat.topic-list"],
+#messages {
   background: transparent !important;
   background-color: transparent !important;
 }
 
-/* 2. 侧边栏 / 会话列表：半透明磨砂 */
-.ant-layout-sider, [class*="sidebar"], [class*="sider"] {
-  background-color: ${a(p.panel, 0.65)} !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border-right: 1px solid ${line} !important;
+/* 3. 内容卡片：保留原生圆角边框，只留一层很薄的底色 */
+[data-ui="app.content"] {
+  background: ${a(p.panel, imageUri ? 0.12 : 0.20)} !important;
+  border-color: ${line} !important;
+  box-shadow: 0 10px 40px -12px rgba(0,0,0,${p.dark ? 0.55 : 0.18}) !important;
 }
 
-/* 3. 主聊天区：轻遮罩 */
-.ant-layout-content, main {
-  background-color: ${a(p.panel, 0.30)} !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+/* 4. 助手 / 话题栏：磨砂玻璃 */
+[class*="resource-list-pane"] {
+  background: ${a(p.panel, paneTint)} !important;
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  border-right: 1px solid ${line};
 }
 
-/* 4. 消息气泡：浮岛 */
-[class*="message-item"], [class*="chat-bubble"], [class*="message-card"] {
-  background-color: ${a(p.bubble, 0.75)} !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid ${line} !important;
-  border-radius: 12px !important;
+/* 5. 中间聊天区：上浅下深的渐变遮罩，露出壁纸又保证正文清楚 */
+[data-ui="part:conversation-main"] {
+  background: linear-gradient(180deg, ${a(p.panel, mainTint - 0.12)} 0%, ${a(p.panel, mainTint)} 35%, ${a(p.panel, mainTint + 0.08)} 100%) !important;
 }
 
-/* 5. 输入框 */
-[class*="input-container"], [class*="chat-input"], [class*="inputbar"] {
-  background-color: ${a(p.bubble, 0.82)} !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid ${line} !important;
-  border-radius: 14px !important;
+/* 6. 用户消息气泡 */
+.message-user .message-content-container {
+  border: 1px solid ${a(accent, 0.22)};
 }
 
-/* 6. 顶栏 */
-.ant-layout-header, [class*="navbar"], [class*="title-bar"] {
-  background-color: ${a(p.panel, 0.50)} !important;
-  backdrop-filter: blur(10px) !important;
-  border-bottom: 1px solid ${line} !important;
+/* 7. 输入框：浮起的磨砂卡片 */
+#inputbar,
+[data-ui="chat.composer"] {
+  background: ${a(p.bubble, p.dark ? 0.78 : 0.85)} !important;
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid ${a(accent, 0.28)} !important;
+  box-shadow: 0 8px 30px -10px rgba(0,0,0,${p.dark ? 0.6 : 0.2}) !important;
+}
+#inputbar:focus-within,
+[data-ui="chat.composer"]:focus-within {
+  border-color: ${a(accent, 0.55)} !important;
 }
 
-/* 7. 主按钮强调色 */
-.ant-btn-primary, [class*="btn-primary"] {
-  background-color: ${p.accent} !important;
-  border-color: ${p.accent} !important;
-  color: ${p.accentText} !important;
-  font-weight: 600 !important;
-  border-radius: 8px !important;
+/* 8. 代码块别被壁纸干扰 */
+[data-ui="part:code-block"] {
+  background: ${p.dark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.85)'} !important;
 }
+
+/* 9. 文字选中 */
+::selection { background: ${a(accent, 0.35)}; }
 `;
 }
