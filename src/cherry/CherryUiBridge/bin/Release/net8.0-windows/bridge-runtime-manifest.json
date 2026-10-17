@@ -1,0 +1,40 @@
+{
+    "schema":  "cherry-bridge-runtime/1",
+    "members":  [
+                    {
+                        "path":  "CherryUiBridge.deps.json",
+                        "bytes":  1608,
+                        "sha256":  "2ffba091e20eb00a8bf82d0dfb34d535247eae7aae84e0ac1378fd8a2d12087b"
+                    },
+                    {
+                        "path":  "CherryUiBridge.dll",
+                        "bytes":  19968,
+                        "sha256":  "3916d5bb80bab875b9dd60ee7513bb7c64f50fcfe86a5bef235b731ec65cad52"
+                    },
+                    {
+                        "path":  "CherryUiBridge.exe",
+                        "bytes":  151552,
+                        "sha256":  "2702eae45b4d6355e615bf529eaaa26a9d0c689ce742f9f909de093c4bcc8390"
+                    },
+                    {
+                        "path":  "CherryUiBridge.runtimeconfig.json",
+                        "bytes":  515,
+                        "sha256":  "89ad1ea5c9c20b6b266547ef27c0ae3840cab5642d3c2aedf06b7026245671dd"
+                    },
+                    {
+                        "path":  "FlaUI.Core.dll",
+                        "bytes":  271872,
+                        "sha256":  "9db64db4606640dc066fb6b38d048168e09fe08bf53df1c6521312ca853a1733"
+                    },
+                    {
+                        "path":  "FlaUI.UIA3.dll",
+                        "bytes":  108544,
+                        "sha256":  "491c073af8b1bd7e68c81a22df8472048c3347422883a965a72069dc7b666fe5"
+                    },
+                    {
+                        "path":  "Interop.UIAutomationClient.dll",
+                        "bytes":  151040,
+                        "sha256":  "dcea43a1f5a2114b7bcc9e41cc1377064307611d0caa50f1ec203b887f4c20bb"
+                    }
+                ]
+}

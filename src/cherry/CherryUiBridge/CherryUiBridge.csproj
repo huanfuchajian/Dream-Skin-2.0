@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>11.0</LangVersion>
+    <AssemblyName>CherryUiBridge</AssemblyName>
+    <RootNamespace>CherryUiBridge</RootNamespace>
+    <FlauiLibDir Condition="'$(FlauiLibDir)' == ''">$(MSBuildThisFileDirectory)..\vendor\flaui\lib</FlauiLibDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaUI.Core">
+      <HintPath>$(FlauiLibDir)\FlaUI.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="FlaUI.UIA3">
+      <HintPath>$(FlauiLibDir)\FlaUI.UIA3.dll</HintPath>
+    </Reference>
+    <!-- FlaUI.UIA3 的传递依赖也要显式声明，否则它不进 deps.json，运行期报「找不到文件」。 -->
+    <Reference Include="Interop.UIAutomationClient">
+      <HintPath>$(FlauiLibDir)\Interop.UIAutomationClient.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

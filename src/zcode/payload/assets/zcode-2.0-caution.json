@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "zcode-2.0-caution/1",
+  "verifiedZCodeVersion": "3.14.4.7912",
+  "enabledSelectors": [],
+  "status": "closed",
+  "reason": "The composer shell is a CAUTION part. It has not been verified live inside a managed session in this development cycle, so it stays out of the allowlist and R3 records the input-area effect as unverified rather than hiding the gap.",
+  "requiresBeforeEnabling": [
+    "live tag presence on 3.14.4.7912",
+    "computed-style difference proved on a real renderer",
+    "protected-region diff unchanged",
+    "text contrast measured over the painted surface"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "zds2-glass",
+  "name": "Deep Glass",
+  "image": "background.png",
+  "appearance": "dark",
+  "art": {
+    "focusX": 0.5,
+    "focusY": 0.45,
+    "safeArea": "left",
+    "taskMode": "ambient"
+  },
+  "colors": {
+    "background": "#1e1e2e",
+    "panel": "#181825",
+    "panelAlt": "#11111b",
+    "accent": "#cba6f7",
+    "accentAlt": "#b4befe",
+    "secondary": "#6c7086",
+    "highlight": "#fab387",
+    "text": "#cdd6f4",
+    "muted": "#a6adc8",
+    "line": "rgba(69, 71, 90, 0.45)"
+  }
+}

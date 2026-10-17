@@ -2,6 +2,11 @@
 *.tmp
 *.bak
 *.obj
-bin/
-obj/
+bin/obj/
 .lemon/
+
+# 排除超出 GitHub 100MB 限制的大型预打包运行时与画廊程序
+theme-gallery/
+runtime/node/
+node.exe
+ZCodeSkinGallery.exe

@@ -79,24 +79,49 @@
 Dream-Skin-2.0/
 ├── src/
 │   ├── DreamSkinMaster/       # 原生 Windows Forms 64位总控台源码 (C#)
-│   │   ├── DreamSkinForm.cs
+│   │   ├── DreamSkinForm.cs   # GUI 窗口主代码 (多预设+自定义壁纸，相对路径自适应)
 │   │   └── build.bat          # csc 编译构建脚本
 │   ├── cherry/                # Cherry Studio 换肤核心
+│   │   ├── CherryUiBridge/    # 核心自动化桥源码与 Release 产物 (.NET 8.0)
+│   │   │   ├── Program.cs
+│   │   │   ├── CssEditorAccess.cs
+│   │   │   ├── CherryUiBridge.csproj
+│   │   │   └── bin/Release/net8.0-windows/
 │   │   ├── host-bridge.mjs    # 生产级自动化 IPC 桥与 CAS 校验层
 │   │   ├── apply-cherry.mjs   # 样式注入驱动
-│   │   └── restore-cherry.mjs # 初始基线还原驱动
+│   │   ├── restore-cherry.mjs # 初始基线还原驱动
+│   │   ├── preset-themes.mjs  # 50 组预设色彩算法底座
+│   │   └── presets/           # 主题预设算法依赖
+│   │       ├── theme-project.mjs
+│   │       ├── composition.mjs
+│   │       └── colorUtils.js
 │   └── zcode/                 # ZCode 客户端换肤核心
-│       ├── injector.mjs       # 基于 CDP 协议的动态样式热挂载器
+│       ├── payload/           # ZCode Dream Skin 完整受管运行载荷
+│       │   ├── scripts/       # 启动/还原/托盘控制 (common/theme/zcode-product/startup/store 等)
+│       │   └── assets/        # 验证器 (theme-package-validator, safe-css-validator)
+│       ├── injector.mjs       # 基于 CDP 调试端口的无侵入热挂载器
 │       ├── start-zcode.ps1    # 受管启动引导
 │       └── restore-zcode.ps1  # 恢复引导
-├── docs/                      # 架构设计与取证档案
-│   └── CODE-MIRROR-6-BREAKTHROUGH.md
+├── docs/                      # 架构设计、全景交接白皮书与取证档案
+│   ├── specs/                 # 实施计划与总工程台账 (IMPLEMENTATION-PLAN, TASK_PROGRESS)
+│   ├── evidence/              # 物理证据 (PAIR-VERDICT, VALID_PAIR)
+│   ├── memory-vault/          # 关键架构记忆 (网关拓扑, 桌面整洁铁律, 终端调度契约)
+│   └── CODE-MIRROR-6-BREAKTHROUGH.md # CodeMirror 6 内部虚拟 DOM 与 UIA 投影失真破案记录
+├── HANDOVER.md                # 外部接手全景交接与问题排障指南
 ├── LICENSE                    # MIT License
 └── README.md                  # 项目说明与技术文档
 ```
 
 ---
 
-## 六、 开源协议
+## 六、 运行环境要求 (实机验证基准)
+
+- **Node.js**：推荐 `v24.x` / `v22.x`（实测基准版本：`v24.19.0`）；
+- **.NET 运行时**：需安装 **.NET 8.0 Windows Desktop Runtime**（实测环境包含 `Microsoft.WindowsDesktop.App 8.0.28` 与 .NET 9 SDK）；
+- **操作系统**：Windows 10 / Windows 11 x64。
+
+---
+
+## 七、 开源协议
 
 本项目采用 [MIT License](LICENSE) 开源协议，欢迎广大二次元与极客开发者贡献预设样式与优化建议！

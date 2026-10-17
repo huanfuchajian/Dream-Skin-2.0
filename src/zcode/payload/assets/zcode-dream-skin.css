@@ -1,0 +1,85 @@
+[data-ds-part="zcode-shell"] {
+  background-color: transparent;
+}
+
+[data-ds-part="zcode-window-frame"] {
+  background-color: transparent;
+  border-radius: 12px;
+}
+
+[data-ds-part="zcode-surface"] {
+  background-color: transparent;
+}
+
+[data-ds-part="zcode-sidebar"] {
+  background-color: rgba(14, 15, 20, 0.62);
+  border-right-color: rgba(255, 255, 255, 0.08);
+  border-right-style: solid;
+  border-right-width: 1px;
+}
+
+[data-ds-part="zcode-sidebar-panel"] {
+  background-color: rgba(20, 21, 28, 0.45);
+}
+
+[data-ds-part="zcode-section-list"] {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+[data-ds-part="zcode-drag-handle"] {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+[data-ds-part="zcode-task-metadata"] {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-ds-part="zcode-marquee-track"] {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+[data-ds-part="zcode-main"] {
+  background-color: rgba(16, 17, 23, 0.55);
+  border-radius: 14px;
+}
+
+[data-ds-part="zcode-conversation"] {
+  background-color: transparent;
+}
+
+[data-ds-part="zcode-panel"] {
+  background-color: transparent;
+  border-radius: 10px;
+}
+
+[data-ds-part="zcode-header"] {
+  background-color: rgba(12, 13, 18, 0.55);
+  border-bottom-color: rgba(255, 255, 255, 0.07);
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+[data-ds-part="zcode-footer"] {
+  background-color: rgba(12, 13, 18, 0.5);
+}
+
+[data-ds-part="zcode-composer"] {
+  background-color: rgba(18, 19, 27, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  border-style: solid;
+  border-width: 1px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+[data-ds-part="zcode-composer-content"] {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+[data-ds-part="zcode-dialog-header"] {
+  background-color: rgba(14, 15, 20, 0.8);
+}
+
+[data-ds-part="zcode-dialog-title"] {
+  color: rgba(255, 255, 255, 0.92);
+}

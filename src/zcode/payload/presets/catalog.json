@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "zcode-dream-skin-preset-catalog/1",
+  "mappingVersion": "zds2-palette-mapping/1",
+  "paletteVersion": "1.7.1",
+  "generatedAtUtc": "deterministic: derived only from the pinned palette and mapping",
+  "presets": [
+    {
+      "id": "zds2-cream",
+      "kind": "public",
+      "directory": "zds2-cream",
+      "imageSource": "derived from @catppuccin/palette 1.7.1 (latte)",
+      "name": "Soft Cream",
+      "description": "Warm latte palette, low-contrast borders, light surfaces",
+      "appearance": "light",
+      "revision": "6b178e5e17bc64b40414",
+      "paletteProvenance": "@catppuccin/palette 1.7.1 (latte) via zds2-palette-mapping/1",
+      "artSourceFormat": "dream-skin-v1-normalized",
+      "targetArtPercent": {
+        "focusX": 50,
+        "focusY": 45
+      }
+    },
+    {
+      "id": "zds2-glass",
+      "kind": "public",
+      "directory": "zds2-glass",
+      "imageSource": "derived from @catppuccin/palette 1.7.1 (mocha)",
+      "name": "Deep Glass",
+      "description": "Mocha palette with purple accents and layered translucent surfaces",
+      "appearance": "dark",
+      "revision": "73eed5a9003e70d54bb8",
+      "paletteProvenance": "@catppuccin/palette 1.7.1 (mocha) via zds2-palette-mapping/1",
+      "artSourceFormat": "dream-skin-v1-normalized",
+      "targetArtPercent": {
+        "focusX": 50,
+        "focusY": 45
+      }
+    },
+    {
+      "id": "zds2-tech",
+      "kind": "public",
+      "directory": "zds2-tech",
+      "imageSource": "derived from @catppuccin/palette 1.7.1 (mocha)",
+      "name": "Blue-Green Tech",
+      "description": "Dark base with teal and sky accents and readable state borders",
+      "appearance": "dark",
+      "revision": "02e20405eed7c35ab01c",
+      "paletteProvenance": "@catppuccin/palette 1.7.1 (mocha) via zds2-palette-mapping/1",
+      "artSourceFormat": "dream-skin-v1-normalized",
+      "targetArtPercent": {
+        "focusX": 50,
+        "focusY": 45
+      }
+    }
+  ],
+  "character": "awaiting-image",
+  "stagedKinds": [
+    "public"
+  ]
+}

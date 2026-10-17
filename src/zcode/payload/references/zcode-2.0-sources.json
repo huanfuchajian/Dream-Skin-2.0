@@ -1,0 +1,232 @@
+{
+  "schemaVersion": "zcode-dream-skin-2.0-sources/1",
+  "note": "Provenance for everything 2.0 borrows. Colour values are read from these artefacts at build time; nothing here is a retyped hex.",
+  "upstream": {
+    "Codex-Dream-Skin": {
+      "repo": "https://github.com/Fei-Away/Codex-Dream-Skin",
+      "commit": "34335d27d54300eccb325cc652f6c93fef428b84",
+      "license": "MIT",
+      "role": "base product this fork adapts"
+    },
+    "CodeDrobe-desktop": {
+      "repo": "https://github.com/CodeDrobe/desktop",
+      "commit": "2401437afd4302821574bae75cc2ed5ce1b75e4a",
+      "license": "MPL-2.0",
+      "role": "gallery UI and desktop shell to reuse in P5",
+      "mediaReuseAllowed": false,
+      "mediaNote": "ASSETS_LICENSE.md: the code licence does not cover logo, icons, screenshots, preview art or store themes; none of it may be packaged"
+    },
+    "CodeDrobe-core": {
+      "repo": "https://github.com/CodeDrobe/core",
+      "commit": "23ffdef633ddd9b0258a957923907c88be4a5fd0",
+      "license": "Apache-2.0",
+      "role": "format reference only; its runtime engine is not consumed"
+    },
+    "catppuccin-vscode": {
+      "repo": "https://github.com/catppuccin/vscode",
+      "commit": "befc9e6fc41980f4241408f7049755d47c06ff45",
+      "license": "MIT",
+      "role": "imports the palette; the VS Code extension runtime is not consumed"
+    }
+  },
+  "palettePackage": {
+    "name": "@catppuccin/palette",
+    "version": "1.7.1",
+    "license": "MIT",
+    "pinnedBy": "catppuccin-vscode pnpm-lock.yaml (catalog: ^1.7.1)",
+    "registryTarball": "https://registry.npmjs.org/@catppuccin/palette/-/palette-1.7.1.tgz",
+    "sha1": "c7cd165dcc1fc025a05ac138a4749b2279cf115e",
+    "sha512Base64": "aRc1tbzrevOTV7nFTT9SRdF26w/MIwT4Jwt4fDMc9itRZUDXCuEDBLyz4TQMlqO9ZP8mf5Hu4Jr6D03NLFc6Gw==",
+    "verifiedAgainstLock": true,
+    "vendoredAt": "windows/vendor/catppuccin-palette-1.7.1",
+    "installNote": "fetched as a tarball and unpacked locally; no npm install, no postinstall script, nothing global",
+    "fileCount": 25,
+    "files": [
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/LICENSE",
+        "sha256": "814096d2c34cc216c624738a49356f32b7237733b4f7edb0685f4e50ef5074ba",
+        "bytes": 1067
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/README.md",
+        "sha256": "a583fe3da5ab7c16fd3233ebe3a04424eaa1b550a9d8901627a998fcdcf6830e",
+        "bytes": 4674
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/css/catppuccin.css",
+        "sha256": "c1d0c64d0fd791f23979f6ea7dd0694d782bea85f50248d04e4564f79d7522b1",
+        "bytes": 12986
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/esm/mod.d.ts",
+        "sha256": "6153c7adeb65dc6abd83c0bc0830831573d09991c02689dd9f60aa62ea8c067e",
+        "bytes": 5485
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/esm/mod.js",
+        "sha256": "75e8277769a5781a0b628fb359bbff602048bd84b3b384285a20d398781c4417",
+        "bytes": 699
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/esm/package.json",
+        "sha256": "3ca9d4afd21425087cf31893b8f9f63c81b0b8408db5e343ca76e5f8aa26ab9a",
+        "bytes": 23
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/esm/palette.d.ts",
+        "sha256": "b04feaea4f1967ca736fd6852b8d52dcc30fddb4f338d753676031730c04134a",
+        "bytes": 197212
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/esm/palette.js",
+        "sha256": "cf50c62a6679d7d9c2238e8c141305f8bd7ef0c4d9e0b1bb42925f45830071b7",
+        "bytes": 85615
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/less/_frappe.less",
+        "sha256": "b01a927e98aac339bc54ff4e4d23b737660de8c9a8638be218e18b71c014be4a",
+        "bytes": 472
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/less/_latte.less",
+        "sha256": "c628cf2e671b53cfdd57aafc46f95ab1e517fd9b77b26d2271ba12d9f9246d4d",
+        "bytes": 472
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/less/_macchiato.less",
+        "sha256": "879708ee120905c8ec6cfbfbbef04e218704de7358df09dfaafa003f879fc3d7",
+        "bytes": 472
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/less/_mocha.less",
+        "sha256": "3a292643afddd8fd0856acc3aad38cd26263bc1aa095135eb051d0e1be432fbc",
+        "bytes": 472
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/less/catppuccin-mixins.less",
+        "sha256": "96a7f97c20802b53497e4f30bfaabcf9963db66b16eeecaf0d51041144b1418a",
+        "bytes": 2196
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/less/catppuccin.less",
+        "sha256": "6857e6c088441637b7cb05c342a400f2f46e133fc0cc661c75a4f311f7f4bd50",
+        "bytes": 2286
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/package.json",
+        "sha256": "c992e57de497ed05d2fe20fc092dd5215065648b329f0593c97f511c0d1a4d12",
+        "bytes": 1087
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/script/mod.d.ts",
+        "sha256": "6153c7adeb65dc6abd83c0bc0830831573d09991c02689dd9f60aa62ea8c067e",
+        "bytes": 5485
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/script/mod.js",
+        "sha256": "c5b49e5a778f0d6280d80382d147f7092bb2014e4e43dda69d35c7c5932fbb7e",
+        "bytes": 1017
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/script/package.json",
+        "sha256": "8005a3491db7d92f36ac66369861589f9c47123d3a7c71e643fc2c06168cd45a",
+        "bytes": 25
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/script/palette.d.ts",
+        "sha256": "b04feaea4f1967ca736fd6852b8d52dcc30fddb4f338d753676031730c04134a",
+        "bytes": 197212
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/script/palette.js",
+        "sha256": "1ac59bbeed79ccc3a329e567670d1c4a36d43149dd20686125859b0b59ce67df",
+        "bytes": 85695
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/scss/_catppuccin.scss",
+        "sha256": "5ddec201f463663d207432d29225eb64e56b0210ae8af6b00e14c919c33a94a9",
+        "bytes": 2498
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/scss/_frappe.scss",
+        "sha256": "17fce506b2b0d9ceea45c79ec21ea425dd7303d5e2bb6bf8006fb866ffa3b3cc",
+        "bytes": 472
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/scss/_latte.scss",
+        "sha256": "c7e30392db91666e8fd247c40c7c82959c1e5c9508d6742189620e84dd92c904",
+        "bytes": 472
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/scss/_macchiato.scss",
+        "sha256": "f46703f021ea7516f25ea88441ccc9e2e188a9291968f934dcfe9f4a01661703",
+        "bytes": 472
+      },
+      {
+        "path": "vendor/catppuccin-palette-1.7.1/scss/_mocha.scss",
+        "sha256": "e6d9f3f7177ef0b3574390e6c61726fd292a339d4b14a72c64bbbf3483747315",
+        "bytes": 472
+      }
+    ]
+  },
+  "mapping": {
+    "version": "zds2-palette-mapping/1",
+    "definedIn": "windows/tools/build-zcode-presets.mjs"
+  },
+  "generatedPresets": [
+    {
+      "path": "windows/presets/catalog.json",
+      "sha256": "a130b18cac41ee8eac6ba72f4b844aaa21339a62563a9f4ec3deb5ddb0f313ad",
+      "bytes": 2037
+    },
+    {
+      "path": "windows/presets/zds2-cream/theme.css",
+      "sha256": "79e385ad200b7b242c914a4b32c13bbe60825116d624e00b0beb9b958b903a32",
+      "bytes": 4096
+    },
+    {
+      "path": "windows/presets/zds2-cream/theme.json",
+      "sha256": "f2fd966a8f3caee4595ec6d975a03735a9e8c478fd6b51c1feb26a884073c282",
+      "bytes": 525
+    },
+    {
+      "path": "windows/presets/zds2-cream/background.png",
+      "sha256": "629dab74478d5de6cd6c1ceb7dec142b7498b2258937fe6ebd0add1d2f85848e",
+      "bytes": 81388
+    },
+    {
+      "path": "windows/presets/zds2-glass/theme.css",
+      "sha256": "a68705680f5ed05c8bb821d922fa83a3faf0ed76d4a2ffab5911ead65fd19ef5",
+      "bytes": 4032
+    },
+    {
+      "path": "windows/presets/zds2-glass/theme.json",
+      "sha256": "ede5ff606f183903012054762e2d791a1952a9ca9ed2054a3797f1a4674c1531",
+      "bytes": 521
+    },
+    {
+      "path": "windows/presets/zds2-glass/background.png",
+      "sha256": "885ce30c86f4143ca3b3db1d6dd0eb6a5a220461dba85c943c7e7a2e8d650ed2",
+      "bytes": 86555
+    },
+    {
+      "path": "windows/presets/zds2-tech/theme.css",
+      "sha256": "923cf602965f5615001f3e807bfeed5a3456be9ec0749fc8693f5948804b7abe",
+      "bytes": 4026
+    },
+    {
+      "path": "windows/presets/zds2-tech/theme.json",
+      "sha256": "4be2809e88e7355fb09454c3713d0adeed1ec8bed598ab2dbbc511b61849dcec",
+      "bytes": 525
+    },
+    {
+      "path": "windows/presets/zds2-tech/background.png",
+      "sha256": "a3f2956d905c4e63fd011d0790cddd20bcfc6d18037e843d384c6fe6019eb348",
+      "bytes": 98901
+    }
+  ],
+  "presetLayout": {
+    "shippedCatalog": "windows/presets/catalog.json",
+    "note": "the staged catalog lists bare directory names so the preset root is self-describing wherever it is copied"
+  }
+}

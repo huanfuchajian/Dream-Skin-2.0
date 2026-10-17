@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "zds2-cream",
+  "name": "Soft Cream",
+  "image": "background.png",
+  "appearance": "light",
+  "art": {
+    "focusX": 0.5,
+    "focusY": 0.45,
+    "safeArea": "left",
+    "taskMode": "ambient"
+  },
+  "colors": {
+    "background": "#eff1f5",
+    "panel": "#e6e9ef",
+    "panelAlt": "#dce0e8",
+    "accent": "#8839ef",
+    "accentAlt": "#1e66f5",
+    "secondary": "#9ca0b0",
+    "highlight": "#fe640b",
+    "text": "#4c4f69",
+    "muted": "#6c6f85",
+    "line": "rgba(188, 192, 204, 0.45)"
+  }
+}
