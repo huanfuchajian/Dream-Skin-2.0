@@ -1,52 +1,45 @@
+// 用法：node restore-cherry.mjs
+// 旧通道（UIA，保留作参考）。默认请用 skin-cherry.mjs（CDP 注入，壁纸无大小限制）。
+// 把 Cherry 自定义 CSS 还原为空白（官方初始状态），同样走 CAS + 读回校验。
 import { writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import * as cw from './host-bridge.mjs';
+import { bridgeExePath, dataDir, cherryIdentity } from './lib/cherry-env.mjs';
 
-(async () => {
-  const cw = await import('file:///C:/Users/Janson/Desktop/换皮/.lemon/dual-skin-closeout-20261015/wt-closeout-cherry/src/host-bridge.mjs');
-  const dir = 'F:/AI/DreamSkin/core';
-  const bridgeExe = 'C:/Users/Janson/Desktop/换皮/.lemon/dual-skin-closeout-20261015/wt-cherry/.lemon/payload-candidate-r19/host/CherryUiBridge/bin/Release/net8.0-windows/CherryUiBridge.exe';
-  const expectedIdentity = {
-    expectedExeSha256: '18c07435ad386dee820c39598d667b6f769498398ada8e7bc1623cd23aadda55',
-    clientVersion: '2.1.4',
-    cssEditorCount: 1
-  };
+try {
+  const { exePath, ...expectedIdentity } = cherryIdentity();
+  const bridge = { exe: bridgeExePath(), args: [] };
+  const dir = dataDir();
 
-  const probeReqId = 'pre-restore-' + Date.now();
-  const probeArtFile = cw.artifactFor(dir, probeReqId);
-  const probeRes = await cw.readCss({
-    bridge: { exe: bridgeExe, args: [] },
-    requestId: probeReqId,
-    expectedClientIdentity: expectedIdentity,
-    artifactFile: probeArtFile,
-    timeoutMs: 15000
-  });
-
-  if (!probeRes.ok) {
-    console.log('FAILED: 无法连接到 Cherry Studio。');
+  const probeId = 'pre-restore-' + Date.now();
+  const probe = cw.readCss({ bridge, requestId: probeId, expectedClientIdentity: expectedIdentity,
+    artifactFile: cw.artifactFor(dir, probeId), timeoutMs: 15000 });
+  if (!probe.ok) {
+    console.log(`FAILED: 读取当前 CSS 失败（${probe.status} / ${probe.reason ?? probe.stage ?? '未知'}）。`);
     process.exit(1);
   }
 
-  const currentSha = probeRes.sha256;
+  // 与 2.0 版一致：空白基线写为单个换行（CM6 空文档经 UIA 读回即为 1 字节换行）。
   const cleanCss = '\n';
   const cleanFile = dir + '/clean-baseline.css';
   writeFileSync(cleanFile, cleanCss, 'utf8');
-
-  const { createHash } = await import('node:crypto');
   const cleanSha = createHash('sha256').update(Buffer.from(cleanCss, 'utf8')).digest('hex');
-
-  const res = await cw.compareAndSetCss({
-    bridge: { exe: bridgeExe, args: [] },
-    requestId: 'restore-' + Date.now(),
-    expectedCurrentSha256: currentSha,
-    newCssFile: cleanFile,
-    newCssSha256: cleanSha,
-    expectedClientIdentity: expectedIdentity,
-    readbackFile: dir + '/readback-clean.css',
-    timeoutMs: 25000
-  });
-
-  if (res.beforeSha256) {
-    console.log('SUCCESS: Cherry Studio 自定义 CSS 已彻底还原为空白基线！');
-  } else {
-    console.log('FAILED: 还原失败。');
+  if (probe.sha256 === cleanSha) {
+    console.log('SUCCESS: Cherry Studio 自定义 CSS 已经是空白，无需还原。');
+    process.exit(0);
   }
-})();
+
+  const id = 'restore-' + Date.now();
+  const res = cw.compareAndSetCss({ bridge, requestId: id, expectedCurrentSha256: probe.sha256,
+    newCssFile: cleanFile, newCssSha256: cleanSha, expectedClientIdentity: expectedIdentity,
+    readbackFile: cw.artifactFor(dir, id + '-readback'), timeoutMs: 25000 });
+  if (res.ok) {
+    console.log('SUCCESS: Cherry Studio 自定义 CSS 已还原为空白基线。');
+  } else {
+    console.log(`FAILED: 还原未通过校验（${res.status} / ${res.reason ?? res.stage ?? '未知'}）。`);
+    process.exit(1);
+  }
+} catch (e) {
+  console.log('FAILED: ' + (e.code ? `${e.code} @ ${e.field}` : e.message));
+  process.exit(1);
+}
