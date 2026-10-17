@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -43,37 +43,57 @@ namespace DreamSkin
             InitializeComponent();
         }
 
+        private string pathSource = "";
+
+        // 查找顺序：DREAMSKIN_ROOT → 向上找仓库（src\cherry\skin-cherry.mjs）→ 旧发布目录 core\。
+        // 以前 core\ 优先，导致旧部署目录里的老脚本一直被执行，修复版根本没跑到。
         private void InitializePaths()
         {
             baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            // 向上找仓库根（exe 放在 src\DreamSkinMaster 下编译时也能找到 src\cherry）
-            string root = baseDir;
-            for (int i = 0; i < 4 && root != null; i++)
+            cherryDir = null;
+            zcodeDir = null;
+
+            string env = Environment.GetEnvironmentVariable("DREAMSKIN_ROOT");
+            if (!string.IsNullOrEmpty(env) && File.Exists(Path.Combine(env, "src", "cherry", "skin-cherry.mjs")))
             {
-                if (Directory.Exists(Path.Combine(root, "src", "cherry")) || Directory.Exists(Path.Combine(root, "core"))) break;
+                UseRepoRoot(env, "环境变量 DREAMSKIN_ROOT");
+                return;
+            }
+
+            string root = baseDir;
+            for (int i = 0; i < 5 && root != null; i++)
+            {
+                if (File.Exists(Path.Combine(root, "src", "cherry", "skin-cherry.mjs")))
+                {
+                    UseRepoRoot(root, "仓库");
+                    return;
+                }
                 DirectoryInfo parent = Directory.GetParent(root.TrimEnd(Path.DirectorySeparatorChar));
                 root = parent == null ? null : parent.FullName;
             }
-            if (root == null) root = baseDir;
 
-            if (Directory.Exists(Path.Combine(root, "core")))
+            root = baseDir;
+            for (int i = 0; i < 5 && root != null; i++)
             {
-                // 发布目录：core\ 放 Cherry 脚本，core\zcode\scripts 放 ZCode payload 脚本
-                cherryDir = Path.Combine(root, "core");
-                zcodeDir = Directory.Exists(Path.Combine(root, "core", "zcode", "scripts"))
-                    ? Path.Combine(root, "core", "zcode", "scripts") : Path.Combine(root, "core");
+                if (File.Exists(Path.Combine(root, "core", "skin-cherry.mjs")))
+                {
+                    cherryDir = Path.Combine(root, "core");
+                    zcodeDir = Directory.Exists(Path.Combine(root, "core", "zcode", "scripts"))
+                        ? Path.Combine(root, "core", "zcode", "scripts") : Path.Combine(root, "core");
+                    pathSource = "发布目录 core";
+                    return;
+                }
+                DirectoryInfo parent = Directory.GetParent(root.TrimEnd(Path.DirectorySeparatorChar));
+                root = parent == null ? null : parent.FullName;
             }
-            else if (Directory.Exists(Path.Combine(root, "src", "cherry")))
-            {
-                // 仓库目录
-                cherryDir = Path.Combine(root, "src", "cherry");
-                zcodeDir = Path.Combine(root, "src", "zcode", "payload", "scripts");
-            }
-            else
-            {
-                cherryDir = baseDir;
-                zcodeDir = baseDir;
-            }
+            pathSource = "";
+        }
+
+        private void UseRepoRoot(string root, string source)
+        {
+            cherryDir = Path.Combine(root, "src", "cherry");
+            zcodeDir = Path.Combine(root, "src", "zcode", "payload", "scripts");
+            pathSource = source;
         }
 
         private string ResolveNodeExe()
@@ -306,7 +326,18 @@ namespace DreamSkin
             };
             this.Controls.Add(txtLog);
 
-            Log("就绪：Dream Skin 2.0 开源自适应版已安全加载。路径已自动解耦。");
+            if (cherryDir == null)
+            {
+                Log("ERROR: 找不到 Dream Skin 脚本（src\\cherry\\skin-cherry.mjs）。请把本程序放在仓库目录里运行，或设置环境变量 DREAMSKIN_ROOT 指向仓库根目录。");
+                btnCherryApply.Enabled = false;
+                btnCherryRestore.Enabled = false;
+                btnZCodeLaunch.Enabled = false;
+                btnZCodeRestore.Enabled = false;
+            }
+            else
+            {
+                Log("脚本目录：" + cherryDir + "（来源：" + pathSource + "）");
+            }
         }
 
         private void Log(string msg)
@@ -352,44 +383,76 @@ namespace DreamSkin
             string presetKey = GetSelectedPresetKey();
             Log(string.Format("正在应用 [{0}] 皮肤到 Cherry Studio...", cboPresets.SelectedItem));
             btnCherryApply.Enabled = false;
-
-            string script = Path.Combine(cherryDir, "apply-cherry.mjs");
-            if (!File.Exists(script))
+            try
             {
-                Log("ERROR: 未找到换肤脚本 " + script);
+                string script = Path.Combine(cherryDir, "skin-cherry.mjs");
+                if (!File.Exists(script))
+                {
+                    Log("ERROR: 未找到换肤脚本 " + script);
+                    return;
+                }
+                string args = "\"" + script + "\" apply --preset " + presetKey;
+                if (!string.IsNullOrEmpty(customImagePath) && File.Exists(customImagePath))
+                {
+                    args += " --image \"" + customImagePath + "\"";
+                }
+
+                ProcResult r = await RunProcessExAsync(ResolveNodeExe(), args);
+                Log(r.Output.Trim());
+                if (r.ExitCode == 3)
+                {
+                    DialogResult ok = MessageBox.Show(this,
+                        "Cherry Studio 正在运行，需要由 Dream Skin 重新启动一次才能换肤。\n\n聊天记录不受影响，但输入框里没发出去的文字会丢失。\n\n现在重启 Cherry Studio 吗？",
+                        "需要重启 Cherry Studio", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (ok != DialogResult.Yes)
+                    {
+                        Log("已取消。");
+                        return;
+                    }
+                    Log("正在重启 Cherry Studio 并应用皮肤（约 10-30 秒）...");
+                    r = await RunProcessExAsync(ResolveNodeExe(), args + " --restart");
+                    Log(r.Output.Trim());
+                }
+                if (r.ExitCode == 0) OfferDesktopShortcut(script);
+            }
+            finally
+            {
                 btnCherryApply.Enabled = true;
-                return;
             }
+        }
 
-            string node = ResolveNodeExe();
-            string args = "\"" + script + "\" --preset " + presetKey;
-            if (!string.IsNullOrEmpty(customImagePath) && File.Exists(customImagePath))
-            {
-                args += " --image \"" + customImagePath + "\"";
-            }
-
-            string output = await RunProcessAsync(node, args);
-            Log(output.Trim());
-            btnCherryApply.Enabled = true;
+        // 皮肤只在「由 Dream Skin 启动的 Cherry」上生效，所以第一次成功后提供一个桌面快捷方式。
+        private async void OfferDesktopShortcut(string script)
+        {
+            string lnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "Cherry Studio (Dream Skin).lnk");
+            if (File.Exists(lnk)) return;
+            DialogResult ok = MessageBox.Show(this,
+                "要在桌面创建「Cherry Studio (Dream Skin)」快捷方式吗？\n\n以后用它打开 Cherry，会自动带上当前皮肤；用原来的图标打开就是原版。",
+                "创建快捷方式", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (ok != DialogResult.Yes) return;
+            ProcResult r = await RunProcessExAsync(ResolveNodeExe(), "\"" + script + "\" shortcut");
+            Log(r.Output.Trim());
         }
 
         private async Task RestoreCherrySkin()
         {
-            Log("正在还原 Cherry Studio 为默认初始空白...");
+            Log("正在还原 Cherry Studio 原版外观...");
             btnCherryRestore.Enabled = false;
-
-            string script = Path.Combine(cherryDir, "restore-cherry.mjs");
-            if (!File.Exists(script))
+            try
             {
-                Log("ERROR: 未找到还原脚本 " + script);
-                btnCherryRestore.Enabled = true;
-                return;
+                string script = Path.Combine(cherryDir, "skin-cherry.mjs");
+                if (!File.Exists(script))
+                {
+                    Log("ERROR: 未找到还原脚本 " + script);
+                    return;
+                }
+                ProcResult r = await RunProcessExAsync(ResolveNodeExe(), "\"" + script + "\" restore");
+                Log(r.Output.Trim());
             }
-
-            string node = ResolveNodeExe();
-            string output = await RunProcessAsync(node, "\"" + script + "\"");
-            Log(output.Trim());
-            btnCherryRestore.Enabled = true;
+            finally
+            {
+                btnCherryRestore.Enabled = true;
+            }
         }
 
         private async Task LaunchZCodeSkin()
@@ -444,10 +507,23 @@ namespace DreamSkin
             Log(output.Trim());
         }
 
-        private Task<string> RunProcessAsync(string exe, string args)
+        private class ProcResult
+        {
+            public string Output = "";
+            public int ExitCode = -1;
+        }
+
+        private async Task<string> RunProcessAsync(string exe, string args)
+        {
+            ProcResult r = await RunProcessExAsync(exe, args);
+            return r.Output;
+        }
+
+        private Task<ProcResult> RunProcessExAsync(string exe, string args)
         {
             return Task.Run(() =>
             {
+                ProcResult res = new ProcResult();
                 try
                 {
                     ProcessStartInfo psi = new ProcessStartInfo
@@ -474,19 +550,24 @@ namespace DreamSkin
                         if (!p.WaitForExit(180000))
                         {
                             try { p.Kill(); } catch { }
-                            return "ERROR: 子进程 3 分钟未结束，已终止。\n" + outBuf + errBuf;
+                            res.Output = "ERROR: 子进程 3 分钟未结束，已终止。\n" + outBuf + errBuf;
+                            return res;
                         }
                         p.WaitForExit();
                         string result = outBuf.ToString();
                         if (errBuf.Length > 0) result += (result.Length > 0 ? "\n" : "") + errBuf;
-                        if (p.ExitCode != 0 && result.IndexOf("FAILED", StringComparison.Ordinal) < 0)
+                        res.ExitCode = p.ExitCode;
+                        if (p.ExitCode != 0 && p.ExitCode != 3 && result.IndexOf("FAILED", StringComparison.Ordinal) < 0
+                            && result.IndexOf("UNCERTAIN", StringComparison.Ordinal) < 0)
                             result = "FAILED (exit " + p.ExitCode + "):\n" + result;
-                        return result;
+                        res.Output = result;
+                        return res;
                     }
                 }
                 catch (Exception ex)
                 {
-                    return "ERROR: " + ex.Message;
+                    res.Output = "ERROR: " + ex.Message + "（如果提示找不到 node.exe，请安装 Node.js 22 或更新版本）";
+                    return res;
                 }
             });
         }

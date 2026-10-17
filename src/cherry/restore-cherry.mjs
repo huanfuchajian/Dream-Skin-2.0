@@ -1,4 +1,5 @@
 // 用法：node restore-cherry.mjs
+// 旧通道（UIA，保留作参考）。默认请用 skin-cherry.mjs（CDP 注入，壁纸无大小限制）。
 // 把 Cherry 自定义 CSS 还原为空白（官方初始状态），同样走 CAS + 读回校验。
 import { writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';

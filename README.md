@@ -30,7 +30,7 @@
 本套件严格贯彻四大工程铁律：
 
 ### 1. 绝对零文件篡改（Non-Invasive）
-- **Cherry Studio 侧**：走官方正规的“外观 → 自定义 CSS”通道，通过专研的 Windows UI Automation (UIA) 桥实现精确输入，原汁原味保全官方二进制与签名。
+- **Cherry Studio 侧**：与 Codex Dream Skin 原型一致，带本机调试端口启动 Cherry，通过 CDP 注入 `<style>`；不改官方二进制、签名和设置（旧的 UIA「自定义 CSS」通道保留作参考）。
 - **ZCode 侧**：基于 Chromium/Electron 标准的 Chrome DevTools Protocol (CDP) 远程调试端口进行动态样式热挂载，零改包、不碰 ASAR，随开随关。
 
 ### 2. 全通透沉浸式毛玻璃美学（Aesthetic Immersion）
@@ -88,7 +88,9 @@ Dream-Skin-2.0/
 │   │   │   ├── CherryUiBridge.csproj
 │   │   │   └── bin/Release/net8.0-windows/
 │   │   ├── host-bridge.mjs    # 生产级自动化 IPC 桥与 CAS 校验层
-│   │   ├── apply-cherry.mjs   # 样式注入驱动
+│   │   ├── skin-cherry.mjs    # 换肤入口（CDP 注入，默认）
+│   │   ├── cdp/               # CDP 客户端与 Cherry 进程管理
+│   │   ├── apply-cherry.mjs   # 旧 UIA 通道（参考）
 │   │   ├── restore-cherry.mjs # 初始基线还原驱动
 │   │   ├── preset-themes.mjs  # 50 组预设色彩算法底座
 │   │   └── presets/           # 主题预设算法依赖
@@ -128,17 +130,25 @@ Dream-Skin-2.0/
 
 ## 快速运行（Windows 10/11 x64）
 
-**前置**：Node.js 22+（官方签名版，加入 PATH）；.NET 8 Desktop Runtime（Cherry 的 UIA 桥需要）；Windows PowerShell 5.1（系统自带）。
+**前置**：Node.js 22+（官方签名版，加入 PATH）；Windows PowerShell 5.1（系统自带）。新的 Cherry 换肤通道不再需要 .NET 8 / UIA 桥。
 
-1. 编译总控台：双击 `src/DreamSkinMaster/build.bat`，生成 `DreamSkinMaster.exe`（放在原目录即可，它会自动向上找到 `src/`）。
-2. **Cherry Studio**：先打开 Cherry，进入 设置 → 外观（自定义 CSS 所在页），窗口不要最小化；再在总控台选预设/壁纸，点「应用」。
-   - 命令行等价：`node src/cherry/apply-cherry.mjs --preset cyber-blue --image D:\wall.jpg`
-   - 还原：`node src/cherry/restore-cherry.mjs`
-   - 预设：`dark-gold` `cyber-blue` `teal-tech` `anime-purple` `warm-cream`；壁纸 ≤ 1.5 MB（JPG/PNG/WebP）
-   - 首次换肤前的原 CSS 会备份到 `%LOCALAPPDATA%\DreamSkin\cherry\original-before-dream-skin.css`
+1. **编译总控台**：运行 `src/DreamSkinMaster/build.bat`，得到 `DreamSkinMaster.exe`（放在仓库里任意子目录都能自动找到脚本；启动日志第一行会显示实际使用的脚本目录）。
+2. **Cherry Studio**：在总控台选预设、可选壁纸（JPG/PNG/WebP，25 MB 以内，原图即可），点「应用」。
+   - 如果 Cherry 已经开着，会弹窗询问是否重启一次（聊天记录不受影响）。
+   - 第一次成功后可一键在桌面创建「Cherry Studio (Dream Skin)」快捷方式：用它打开 Cherry 自动带皮肤，用原图标打开就是原版。
+   - 命令行等价：`node src/cherry/skin-cherry.mjs apply --preset cyber-blue --image D:\wall.jpg [--restart]`
+   - 其他命令：`launch`（用上次的皮肤启动）、`restore`（还原）、`shortcut`、`status`。
+   - 退出码：0 成功 / 1 失败未改动 / 2 不确定 / 3 需要重启 Cherry。
+   - 如果以前用旧版写过 Cherry「设置 → 外观 → 自定义 CSS」，请把那里清空，免得和新皮肤打架。
 3. **ZCode**：总控台点「启动 ZCode 换肤」，实际调用 `src/zcode/payload/scripts/start-zcode-dream-skin.ps1`；还原调用 `restore-zcode-dream-skin.ps1`。
 
-**可选环境变量**：`DREAMSKIN_DATA_DIR`（Cherry 工件目录）、`DREAMSKIN_CHERRY_BRIDGE`（自编译的 CherryUiBridge.exe 路径）、`DREAMSKIN_CHERRY_VERSION`（强制指定 Cherry 版本前缀）。
+### Cherry 换肤原理（2026-10 起）
+和 Codex Dream Skin 原型同一条路：Dream Skin 带本机调试端口（`--remote-debugging-port`，只监听 127.0.0.1）启动 Cherry，再通过 CDP 往主窗口插入一个 `<style>`。不改 Cherry 的安装文件，也不改它的设置；一个常驻小进程负责在窗口刷新后自动补上皮肤，Cherry 退出它就退出。Cherry 官方的回归测试也是用同样的参数驱动已安装版本（`scripts/e2e/regression/lifecycle.ts`）。
 
-**重新编译 UIA 桥**：`dotnet build src/cherry/CherryUiBridge -c Release`（FlaUI 依赖已放在 `src/cherry/vendor/flaui/lib`）。
+旧的 UIA 通道（`apply-cherry.mjs` / `restore-cherry.mjs` + `CherryUiBridge`）保留作参考，不再是默认方式：它要把整份 CSS 塞进设置页的编辑框，壁纸被限制在 1.5 MB，且容易超时。
 
+**可选环境变量**：`DREAMSKIN_ROOT`（仓库根目录）、`DREAMSKIN_CHERRY_EXE`（Cherry Studio.exe 路径）、`DREAMSKIN_DATA_DIR`（状态目录，默认 `%LOCALAPPDATA%\DreamSkin\cherry`）。
+
+### 验证状态
+- 已验证：Node 语法检查；CSS 生成；用 Chromium 模拟 Cherry v2.1.4 主窗口 DOM 完成「应用 → 刷新后自动补回 → 压过自定义 CSS → 还原」全流程；总控台用 mono mcs `-langversion:5` 编译通过。
+- `NOT_RUN`：Cherry Studio v2.1.4 真机换肤与还原；Windows 上 `build.bat`（.NET Framework csc）编译；关闭/重启 Cherry 的进程处理；桌面快捷方式；ZCode 全流程。

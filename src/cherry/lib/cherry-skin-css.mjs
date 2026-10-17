@@ -27,18 +27,30 @@ export const CHERRY_PRESETS = {
 };
 CHERRY_PRESETS['soft-cream'] = CHERRY_PRESETS['warm-cream'];
 
-// CM6 编辑器通过 UIA ValuePattern 一次写入，读回时整份比 hash；壁纸太大写入和读回都会很慢甚至截断。
+// 旧 UIA 通道（apply-cherry.mjs）要把整份 CSS 塞进编辑框，壁纸只能很小；
+// 新 CDP 通道（skin-cherry.mjs）走 WebSocket 直接注入 <style>，可以用原图。
 export const MAX_IMAGE_BYTES = 1.5 * 1024 * 1024;
+export const MAX_IMAGE_BYTES_CDP = 25 * 1024 * 1024;
 const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
 
-export function imageDataUri(path) {
-  const mime = MIME[extname(path).toLowerCase()];
-  if (!mime) throw new Error('壁纸只支持 JPG / PNG / WebP：' + path);
+// 按文件头判断真实格式，防止把改了后缀的别的文件当壁纸。
+function sniffMime(buf) {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf.length >= 8 && buf.readUInt32BE(0) === 0x89504e47) return 'image/png';
+  if (buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+  return '';
+}
+
+export function imageDataUri(path, maxBytes = MAX_IMAGE_BYTES) {
+  if (!MIME[extname(path).toLowerCase()]) throw new Error('壁纸只支持 JPG / PNG / WebP：' + path);
   const size = statSync(path).size;
-  if (size > MAX_IMAGE_BYTES) {
-    throw new Error(`壁纸 ${(size / 1048576).toFixed(1)} MB 太大，请压到 1.5 MB 以内再试（建议 1920 宽的 JPG/WebP）。`);
+  if (size > maxBytes) {
+    throw new Error(`壁纸 ${(size / 1048576).toFixed(1)} MB 太大，上限 ${(maxBytes / 1048576).toFixed(1)} MB。`);
   }
-  return `data:${mime};base64,${readFileSync(path).toString('base64')}`;
+  const buf = readFileSync(path);
+  const mime = sniffMime(buf);
+  if (!mime) throw new Error('这个文件不是有效的 JPG / PNG / WebP 图片：' + path);
+  return `data:${mime};base64,${buf.toString('base64')}`;
 }
 
 function hexToRgb(hex) {
@@ -63,17 +75,18 @@ export function buildCherryCss(presetKey = 'dark-gold', imageUri = '', opts = {}
   const line = p.dark ? 'rgba(255,255,255,0.10)' : 'rgba(60,40,10,0.12)';
   const focus = `${clampPct(opts.focusX, 50)}% ${clampPct(opts.focusY, 40)}%`;
 
-  // 有壁纸：左侧（图标栏 + 助手栏）压暗一些，右侧尽量露图；没壁纸：配色底 + 强调色柔光。
-  const scrim = p.dark
-    ? `linear-gradient(90deg, ${a(shade, 0.62)} 0%, ${a(shade, 0.38)} 28%, ${a(shade, 0.22)} 60%, ${a(shade, 0.30)} 100%)`
-    : `linear-gradient(90deg, ${a(shade, 0.70)} 0%, ${a(shade, 0.45)} 28%, ${a(shade, 0.30)} 60%, ${a(shade, 0.38)} 100%)`;
+  // 遮罩强度直接取原型 Codex Dream Skin 的 immersive 档（dream-skin.css: edge .40 / mid .26 / far .16，
+  // 侧栏 .46，输入框 .44）。只叠一层：body 上一道横向渐变，其他层要么透明要么是磨砂卡片，避免层层压暗。
+  const base = p.dark ? hexToRgb(p.bg) : p.panel;
+  const edge = p.dark ? 0.40 : 0.44, mid = p.dark ? 0.26 : 0.28, far = p.dark ? 0.16 : 0.18;
+  const scrim = `linear-gradient(90deg, ${a(base, edge)} 0%, ${a(base, mid)} 30%, ${a(base, far)} 65%, ${a(base, mid)} 100%)`;
   const wallpaper = imageUri
     ? `${scrim}, url("${imageUri}") ${focus} / cover no-repeat fixed, ${p.bg}`
     : `radial-gradient(1200px 700px at 85% 10%, ${a(accent, p.dark ? 0.16 : 0.12)}, transparent 60%), radial-gradient(900px 600px at 0% 100%, ${a(accent, p.dark ? 0.10 : 0.08)}, transparent 60%), ${p.bg}`;
 
-  // 读字区遮罩强度：有图时适中，无图时更实。
-  const mainTint = imageUri ? (p.dark ? 0.50 : 0.58) : (p.dark ? 0.35 : 0.45);
-  const paneTint = imageUri ? (p.dark ? 0.46 : 0.55) : (p.dark ? 0.55 : 0.60);
+  // 读字区：有图时只在底部（输入框附近）加一点渐暗，无图时稍实。
+  const mainTop = imageUri ? 0.06 : 0.30, mainBottom = imageUri ? mid : 0.40;
+  const paneTint = p.dark ? 0.46 : 0.50;
 
   return `/* ===== Cherry Dream Skin 2.0 · ${p.name} (${presetKey}) · for Cherry Studio v2 ===== */
 
@@ -135,7 +148,7 @@ body:has(#app-sidebar) .h-screen.w-screen,
 
 /* 3. 内容卡片：保留原生圆角边框，只留一层很薄的底色 */
 [data-ui="app.content"] {
-  background: ${a(p.panel, imageUri ? 0.12 : 0.20)} !important;
+  background: ${imageUri ? 'transparent' : a(p.panel, 0.20)} !important;
   border-color: ${line} !important;
   box-shadow: 0 10px 40px -12px rgba(0,0,0,${p.dark ? 0.55 : 0.18}) !important;
 }
@@ -150,7 +163,11 @@ body:has(#app-sidebar) .h-screen.w-screen,
 
 /* 5. 中间聊天区：上浅下深的渐变遮罩，露出壁纸又保证正文清楚 */
 [data-ui="part:conversation-main"] {
-  background: linear-gradient(180deg, ${a(p.panel, mainTint - 0.12)} 0%, ${a(p.panel, mainTint)} 35%, ${a(p.panel, mainTint + 0.08)} 100%) !important;
+  background: linear-gradient(180deg, ${a(p.panel, mainTop)} 0%, ${a(p.panel, mainTop)} 55%, ${a(p.panel, mainBottom)} 100%) !important;
+}
+/* 正文压一层很淡的阴影，浅色壁纸上也看得清 */
+[data-ui="chat.message-list"] {
+  text-shadow: ${p.dark ? '0 1px 2px rgba(0,0,0,0.55)' : '0 1px 1px rgba(255,255,255,0.6)'};
 }
 
 /* 6. 用户消息气泡 */
@@ -161,9 +178,9 @@ body:has(#app-sidebar) .h-screen.w-screen,
 /* 7. 输入框：浮起的磨砂卡片 */
 #inputbar,
 [data-ui="chat.composer"] {
-  background: ${a(p.bubble, p.dark ? 0.78 : 0.85)} !important;
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  background: ${a(p.bubble, imageUri ? 0.44 : 0.80)} !important;
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
   border: 1px solid ${a(accent, 0.28)} !important;
   box-shadow: 0 8px 30px -10px rgba(0,0,0,${p.dark ? 0.6 : 0.2}) !important;
 }

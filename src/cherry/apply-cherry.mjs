@@ -1,4 +1,5 @@
 // 用法：node apply-cherry.mjs [--preset dark-gold|cyber-blue|teal-tech|anime-purple|warm-cream] [--image 壁纸路径]
+// 旧通道（UIA，保留作参考）。默认请用 skin-cherry.mjs（CDP 注入，壁纸无大小限制）。
 // 走 Cherry 官方「自定义 CSS」通道，经 UIA 桥做 CAS 写入并完整读回校验。
 import { writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
