@@ -10,3 +10,7 @@ theme-gallery/
 runtime/node/
 node.exe
 ZCodeSkinGallery.exe
+
+# build outputs
+src/DreamSkinMaster/*.exe
+src/DreamSkinMaster/payload.zip

@@ -43,7 +43,7 @@
 
 ### 4. 单一原生 GUI 整合（Unified Desktop Experience）
 - 告别零散的批处理文件与晦涩的终端脚本；
-- 采用 C# 开发并编译为单一原生的 64 位 Windows GUI 总控程序（`DreamSkinMaster.exe`），将双端换肤、预设挑选、自定义壁纸选择与一键还原完全收拢在同一个精致的窗口中。
+- 采用 C# 开发并编译为单一原生的 64 位 Windows GUI 总控程序（`DreamSkin.exe`），将双端换肤、预设挑选、自定义壁纸选择与一键还原完全收拢在同一个窗口中（单文件，脚本内置）。
 
 ---
 
@@ -80,7 +80,8 @@ Dream-Skin-2.0/
 ├── src/
 │   ├── DreamSkinMaster/       # 原生 Windows Forms 64位总控台源码 (C#)
 │   │   ├── DreamSkinForm.cs   # GUI 窗口主代码 (多预设+自定义壁纸，相对路径自适应)
-│   │   └── build.bat          # csc 编译构建脚本
+│   │   ├── build.ps1          # 打包 payload + csc 编译成单文件 DreamSkin.exe
+│   │   └── build.bat          # 双击调用 build.ps1
 │   ├── cherry/                # Cherry Studio 换肤核心
 │   │   ├── CherryUiBridge/    # 核心自动化桥源码与 Release 产物 (.NET 8.0)
 │   │   │   ├── Program.cs
@@ -130,17 +131,20 @@ Dream-Skin-2.0/
 
 ## 快速运行（Windows 10/11 x64）
 
-**前置**：Node.js 22+（官方签名版，加入 PATH）；Windows PowerShell 5.1（系统自带）。新的 Cherry 换肤通道不再需要 .NET 8 / UIA 桥。
+**最简单**：下载单文件 `DreamSkin.exe`（GitHub Actions 每次提交自动构建，在 Actions 的 Artifacts 或 Releases 里），双击即用。
+- 换肤脚本和 ZCode 资源都打包在 exe 里，首次运行释放到 `%LOCALAPPDATA%\DreamSkin\app\<内容哈希>\`，更新 exe 后自动换新目录。
+- 没有 Node.js 22 时，在「环境与日志」点「安装 / 修复 Node.js 22」：从 nodejs.org 下载官方 win-x64 zip，按 `SHASUMS256.txt` 校验 SHA-256 后装到 `%LOCALAPPDATA%\DreamSkin\runtime\node`，不动系统 PATH。
+- 系统要求：Windows 10/11 自带的 .NET Framework 4.5+ 与 PowerShell 5.1，不需要装 .NET 8 或 Visual Studio。
 
-1. **编译总控台**：运行 `src/DreamSkinMaster/build.bat`，得到 `DreamSkinMaster.exe`（放在仓库里任意子目录都能自动找到脚本；启动日志第一行会显示实际使用的脚本目录）。
-2. **Cherry Studio**：在总控台选预设、可选壁纸（JPG/PNG/WebP，25 MB 以内，原图即可），点「应用」。
+1. **自己构建 exe**：运行 `src/DreamSkinMaster/build.bat`（内部调 `build.ps1`：打包 `src\cherry` 与 `src\zcode\payload` → 嵌入 → 用系统自带 csc 编译），得到 `src/DreamSkinMaster/DreamSkin.exe`。在仓库目录里运行时优先用仓库源码，方便改脚本即时生效。
+2. **Cherry Studio**：在总控台选预设、可选壁纸（JPG/PNG/WebP，25 MB 以内，原图即可；也可直接把图片拖进窗口或拖到 exe 上），实时预览确认后点「应用皮肤」。
    - 如果 Cherry 已经开着，会弹窗询问是否重启一次（聊天记录不受影响）。
    - 第一次成功后可一键在桌面创建「Cherry Studio (Dream Skin)」快捷方式：用它打开 Cherry 自动带皮肤，用原图标打开就是原版。
    - 命令行等价：`node src/cherry/skin-cherry.mjs apply --preset cyber-blue --image D:\wall.jpg [--restart]`
    - 其他命令：`launch`（用上次的皮肤启动）、`restore`（还原）、`shortcut`、`status`。
    - 退出码：0 成功 / 1 失败未改动 / 2 不确定 / 3 需要重启 Cherry。
    - 如果以前用旧版写过 Cherry「设置 → 外观 → 自定义 CSS」，请把那里清空，免得和新皮肤打架。
-3. **ZCode**：总控台点「启动 ZCode 换肤」，实际调用 `src/zcode/payload/scripts/start-zcode-dream-skin.ps1`；还原调用 `restore-zcode-dream-skin.ps1`。
+3. **ZCode**：在 ZCode 页选预设（可用自定义壁纸覆盖预设图片），点「启动 ZCode 换肤」，实际调用 `src/zcode/payload/scripts/start-zcode-dream-skin.ps1`；还原调用 `restore-zcode-dream-skin.ps1`。
 
 ### Cherry 换肤原理（2026-10 起）
 和 Codex Dream Skin 原型同一条路：Dream Skin 带本机调试端口（`--remote-debugging-port`，只监听 127.0.0.1）启动 Cherry，再通过 CDP 往主窗口插入一个 `<style>`。不改 Cherry 的安装文件，也不改它的设置；一个常驻小进程负责在窗口刷新后自动补上皮肤，Cherry 退出它就退出。Cherry 官方的回归测试也是用同样的参数驱动已安装版本（`scripts/e2e/regression/lifecycle.ts`）。
@@ -150,5 +154,5 @@ Dream-Skin-2.0/
 **可选环境变量**：`DREAMSKIN_ROOT`（仓库根目录）、`DREAMSKIN_CHERRY_EXE`（Cherry Studio.exe 路径）、`DREAMSKIN_DATA_DIR`（状态目录，默认 `%LOCALAPPDATA%\DreamSkin\cherry`）。
 
 ### 验证状态
-- 已验证：Node 语法检查；CSS 生成；用 Chromium 模拟 Cherry v2.1.4 主窗口 DOM 完成「应用 → 刷新后自动补回 → 压过自定义 CSS → 还原」全流程；总控台用 mono mcs `-langversion:5` 编译通过。
-- `NOT_RUN`：Cherry Studio v2.1.4 真机换肤与还原；Windows 上 `build.bat`（.NET Framework csc）编译；关闭/重启 Cherry 的进程处理；桌面快捷方式；ZCode 全流程。
+- 已验证：Node 语法检查；CSS 生成；用 Chromium 模拟 Cherry v2.1.4 主窗口 DOM 完成「应用 → 刷新后自动补回 → 压过自定义 CSS → 还原」全流程；总控台（含嵌入资源）用 mono mcs `-langversion:5` 编译通过，并在 mono/Xvfb 下启动截图检查了三个页面与资源释放。
+- `NOT_RUN`：Cherry Studio v2.1.4 真机换肤与还原；Windows 上 `build.bat`（.NET Framework csc）编译与 exe 实际运行；Node 自动安装；拖放；关闭/重启 Cherry 的进程处理；桌面快捷方式；ZCode 全流程。
