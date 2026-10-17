@@ -32,18 +32,54 @@ namespace DreamSkin
 
         private TextBox txtLog;
 
-        private readonly string nodeExe = @"C:\Users\Janson\Desktop\换皮\.lemon\dual-skin-closeout-20261015\wt-closeout-cherry\runtime\node\node.exe";
-        private readonly string coreDir = @"F:\AI\DreamSkin\core";
+        private string baseDir;
+        private string cherryDir;
+        private string zcodeDir;
         private string customImagePath = "";
 
         public MainForm()
         {
+            InitializePaths();
             InitializeComponent();
+        }
+
+        private void InitializePaths()
+        {
+            baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            // 兼容发布目录结构与开发目录结构
+            if (Directory.Exists(Path.Combine(baseDir, "core")))
+            {
+                cherryDir = Path.Combine(baseDir, "core");
+                zcodeDir = Path.Combine(baseDir, "core");
+            }
+            else if (Directory.Exists(Path.Combine(baseDir, "src", "cherry")))
+            {
+                cherryDir = Path.Combine(baseDir, "src", "cherry");
+                zcodeDir = Path.Combine(baseDir, "src", "zcode");
+            }
+            else
+            {
+                cherryDir = baseDir;
+                zcodeDir = baseDir;
+            }
+        }
+
+        private string ResolveNodeExe()
+        {
+            // 1. 优先使用本地相对路径打包的可信 node
+            string localNode = Path.Combine(baseDir, "runtime", "node", "node.exe");
+            if (File.Exists(localNode)) return localNode;
+
+            string parentNode = Path.Combine(baseDir, "..", "runtime", "node", "node.exe");
+            if (File.Exists(parentNode)) return Path.GetFullPath(parentNode);
+
+            // 2. 其次使用系统 PATH 中的 node
+            return "node.exe";
         }
 
         private void InitializeComponent()
         {
-            this.Text = "Dream Skin 2.0 - 双端换肤总控台";
+            this.Text = "Dream Skin 2.0 - 双端换肤总控台 (开源自适应版)";
             this.Size = new Size(720, 530);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
@@ -65,7 +101,7 @@ namespace DreamSkin
 
             lblSubtitle = new Label
             {
-                Text = "Cherry Studio 与 ZCode 本机零侵入换肤、多预设与自定义背景管理",
+                Text = "Cherry Studio 与 ZCode 本机零侵入换肤、多预设与全通透壁纸管理（路径完全解耦）",
                 Font = new Font("Microsoft YaHei UI", 9f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(150, 150, 160),
                 Location = new Point(26, 46),
@@ -205,7 +241,7 @@ namespace DreamSkin
 
             lblZCodeStatus = new Label
             {
-                Text = "基于 CDP 远程调试热注入，系统托盘常驻管理\r\n已在 D 盘建立全量只增数据备份",
+                Text = "基于 CDP 远程调试热注入，系统托盘常驻管理\r\n全套配置支持跨端安全备份与一键无损还原",
                 ForeColor = Color.FromArgb(140, 140, 150),
                 Font = new Font("Microsoft YaHei UI", 8.5f),
                 Location = new Point(14, 42),
@@ -258,7 +294,7 @@ namespace DreamSkin
             };
             this.Controls.Add(txtLog);
 
-            Log("就绪：双端换肤控制套件已就绪。D盘全量数据备份安全生效。");
+            Log("就绪：Dream Skin 2.0 开源自适应版已安全加载。路径已自动解耦。");
         }
 
         private void Log(string msg)
@@ -305,14 +341,22 @@ namespace DreamSkin
             Log(string.Format("正在应用 [{0}] 皮肤到 Cherry Studio...", cboPresets.SelectedItem));
             btnCherryApply.Enabled = false;
 
-            string script = Path.Combine(coreDir, "apply-cherry.mjs");
+            string script = Path.Combine(cherryDir, "apply-cherry.mjs");
+            if (!File.Exists(script))
+            {
+                Log("ERROR: 未找到换肤脚本 " + script);
+                btnCherryApply.Enabled = true;
+                return;
+            }
+
+            string node = ResolveNodeExe();
             string args = "\"" + script + "\" --preset " + presetKey;
             if (!string.IsNullOrEmpty(customImagePath) && File.Exists(customImagePath))
             {
                 args += " --image \"" + customImagePath + "\"";
             }
 
-            string output = await RunProcessAsync(nodeExe, args);
+            string output = await RunProcessAsync(node, args);
             Log(output.Trim());
             btnCherryApply.Enabled = true;
         }
@@ -321,8 +365,17 @@ namespace DreamSkin
         {
             Log("正在还原 Cherry Studio 为默认初始空白...");
             btnCherryRestore.Enabled = false;
-            string script = Path.Combine(coreDir, "restore-cherry.mjs");
-            string output = await RunProcessAsync(nodeExe, "\"" + script + "\"");
+
+            string script = Path.Combine(cherryDir, "restore-cherry.mjs");
+            if (!File.Exists(script))
+            {
+                Log("ERROR: 未找到还原脚本 " + script);
+                btnCherryRestore.Enabled = true;
+                return;
+            }
+
+            string node = ResolveNodeExe();
+            string output = await RunProcessAsync(node, "\"" + script + "\"");
             Log(output.Trim());
             btnCherryRestore.Enabled = true;
         }
@@ -330,7 +383,15 @@ namespace DreamSkin
         private async Task LaunchZCodeSkin()
         {
             Log("正在启动 ZCode 增强换肤模式及托盘管理器...");
-            string psScript = @"C:\Users\Janson\AppData\Local\Programs\ZCodeDreamSkin\payload\scripts\start-zcode-dream-skin.ps1";
+            string psScript = Path.Combine(zcodeDir, "start-zcode.ps1");
+            if (!File.Exists(psScript))
+            {
+                // 兼容官方安装目录位置
+                string appDataPs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Programs", "ZCodeDreamSkin", "payload", "scripts", "start-zcode-dream-skin.ps1");
+                if (File.Exists(appDataPs)) psScript = appDataPs;
+            }
+
             await Task.Run(() =>
             {
                 ProcessStartInfo psi = new ProcessStartInfo
@@ -348,7 +409,14 @@ namespace DreamSkin
         private async Task RestoreZCodeSkin()
         {
             Log("正在还原 ZCode 为默认纯净初始状态...");
-            string psScript = @"C:\Users\Janson\AppData\Local\Programs\ZCodeDreamSkin\payload\scripts\restore-zcode-dream-skin.ps1";
+            string psScript = Path.Combine(zcodeDir, "restore-zcode.ps1");
+            if (!File.Exists(psScript))
+            {
+                string appDataPs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Programs", "ZCodeDreamSkin", "payload", "scripts", "restore-zcode-dream-skin.ps1");
+                if (File.Exists(appDataPs)) psScript = appDataPs;
+            }
+
             string output = await RunProcessAsync("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -File \"" + psScript + "\"");
             Log("SUCCESS: ZCode 皮肤配置已还原回官方默认。");
         }
