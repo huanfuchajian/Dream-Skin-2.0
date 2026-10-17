@@ -46,16 +46,28 @@ namespace DreamSkin
         private void InitializePaths()
         {
             baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            // 兼容发布目录结构与开发目录结构
-            if (Directory.Exists(Path.Combine(baseDir, "core")))
+            // 向上找仓库根（exe 放在 src\DreamSkinMaster 下编译时也能找到 src\cherry）
+            string root = baseDir;
+            for (int i = 0; i < 4 && root != null; i++)
             {
-                cherryDir = Path.Combine(baseDir, "core");
-                zcodeDir = Path.Combine(baseDir, "core");
+                if (Directory.Exists(Path.Combine(root, "src", "cherry")) || Directory.Exists(Path.Combine(root, "core"))) break;
+                DirectoryInfo parent = Directory.GetParent(root.TrimEnd(Path.DirectorySeparatorChar));
+                root = parent == null ? null : parent.FullName;
             }
-            else if (Directory.Exists(Path.Combine(baseDir, "src", "cherry")))
+            if (root == null) root = baseDir;
+
+            if (Directory.Exists(Path.Combine(root, "core")))
             {
-                cherryDir = Path.Combine(baseDir, "src", "cherry");
-                zcodeDir = Path.Combine(baseDir, "src", "zcode");
+                // 发布目录：core\ 放 Cherry 脚本，core\zcode\scripts 放 ZCode payload 脚本
+                cherryDir = Path.Combine(root, "core");
+                zcodeDir = Directory.Exists(Path.Combine(root, "core", "zcode", "scripts"))
+                    ? Path.Combine(root, "core", "zcode", "scripts") : Path.Combine(root, "core");
+            }
+            else if (Directory.Exists(Path.Combine(root, "src", "cherry")))
+            {
+                // 仓库目录
+                cherryDir = Path.Combine(root, "src", "cherry");
+                zcodeDir = Path.Combine(root, "src", "zcode", "payload", "scripts");
             }
             else
             {
@@ -383,13 +395,18 @@ namespace DreamSkin
         private async Task LaunchZCodeSkin()
         {
             Log("正在启动 ZCode 增强换肤模式及托盘管理器...");
-            string psScript = Path.Combine(zcodeDir, "start-zcode.ps1");
+            string psScript = Path.Combine(zcodeDir, "start-zcode-dream-skin.ps1");
             if (!File.Exists(psScript))
             {
                 // 兼容官方安装目录位置
                 string appDataPs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Programs", "ZCodeDreamSkin", "payload", "scripts", "start-zcode-dream-skin.ps1");
                 if (File.Exists(appDataPs)) psScript = appDataPs;
+            }
+            if (!File.Exists(psScript))
+            {
+                Log("ERROR: 未找到 ZCode 启动脚本 " + psScript);
+                return;
             }
 
             await Task.Run(() =>
@@ -403,13 +420,13 @@ namespace DreamSkin
                 };
                 Process.Start(psi);
             });
-            Log("SUCCESS: ZCode 增强换肤已唤起，皮肤管理服务已在系统托盘启动！");
+            Log("已发起 ZCode 换肤启动（脚本在后台运行，约 10-60 秒后 ZCode 窗口出现皮肤、托盘出现图标）。若失败，详情见 %LOCALAPPDATA% 下 ZCodeDreamSkin 状态目录的 last-apply-report.json。");
         }
 
         private async Task RestoreZCodeSkin()
         {
             Log("正在还原 ZCode 为默认纯净初始状态...");
-            string psScript = Path.Combine(zcodeDir, "restore-zcode.ps1");
+            string psScript = Path.Combine(zcodeDir, "restore-zcode-dream-skin.ps1");
             if (!File.Exists(psScript))
             {
                 string appDataPs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -417,8 +434,14 @@ namespace DreamSkin
                 if (File.Exists(appDataPs)) psScript = appDataPs;
             }
 
-            string output = await RunProcessAsync("powershell.exe", "-NoProfile -ExecutionPolicy Bypass -File \"" + psScript + "\"");
-            Log("SUCCESS: ZCode 皮肤配置已还原回官方默认。");
+            if (!File.Exists(psScript))
+            {
+                Log("ERROR: 未找到 ZCode 还原脚本 " + psScript);
+                return;
+            }
+            string output = await RunProcessAsync("powershell.exe",
+                "-NoProfile -ExecutionPolicy Bypass -Command \"[Console]::OutputEncoding=[Text.Encoding]::UTF8; & '" + psScript.Replace("'", "''") + "'; exit $LASTEXITCODE\"");
+            Log(output.Trim());
         }
 
         private Task<string> RunProcessAsync(string exe, string args)
@@ -438,12 +461,27 @@ namespace DreamSkin
                         StandardOutputEncoding = Encoding.UTF8,
                         StandardErrorEncoding = Encoding.UTF8
                     };
-                    using (Process p = Process.Start(psi))
+                    using (Process p = new Process())
                     {
-                        string stdout = p.StandardOutput.ReadToEnd();
-                        string stderr = p.StandardError.ReadToEnd();
-                        p.WaitForExit(30000);
-                        return string.IsNullOrWhiteSpace(stdout) ? stderr : stdout;
+                        p.StartInfo = psi;
+                        StringBuilder outBuf = new StringBuilder();
+                        StringBuilder errBuf = new StringBuilder();
+                        p.OutputDataReceived += (s, e) => { if (e.Data != null) lock (outBuf) outBuf.AppendLine(e.Data); };
+                        p.ErrorDataReceived += (s, e) => { if (e.Data != null) lock (errBuf) errBuf.AppendLine(e.Data); };
+                        p.Start();
+                        p.BeginOutputReadLine();
+                        p.BeginErrorReadLine();
+                        if (!p.WaitForExit(180000))
+                        {
+                            try { p.Kill(); } catch { }
+                            return "ERROR: 子进程 3 分钟未结束，已终止。\n" + outBuf + errBuf;
+                        }
+                        p.WaitForExit();
+                        string result = outBuf.ToString();
+                        if (errBuf.Length > 0) result += (result.Length > 0 ? "\n" : "") + errBuf;
+                        if (p.ExitCode != 0 && result.IndexOf("FAILED", StringComparison.Ordinal) < 0)
+                            result = "FAILED (exit " + p.ExitCode + "):\n" + result;
+                        return result;
                     }
                 }
                 catch (Exception ex)

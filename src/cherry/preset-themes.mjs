@@ -1,9 +1,9 @@
 // 四套完整皮肤的参数底座。配色算法复用已许可的 Theme Station colorUtils（不另写一套）；
 // 这里只负责把它们的结果接到本工具既有的项目合同与受限生成器上。
-import { validateProject } from './theme-project.mjs';
-import { upgradeProjectV1 } from './composition.mjs';
+import { validateProject } from './presets/theme-project.mjs';
+import { upgradeProjectV1 } from './presets/composition.mjs';
 import { lightenHex, darkenHex, hexWithAlpha, roundAlpha }
-  from '../desktop/vendor/theme-station/src/utils/colorUtils.js';
+  from './presets/colorUtils.js';
 
 export const PRESET_GROUPS = ['氛围人物', '柔和', '深色', '科技'];
 

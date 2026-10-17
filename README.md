@@ -125,3 +125,20 @@ Dream-Skin-2.0/
 ## 七、 开源协议
 
 本项目采用 [MIT License](LICENSE) 开源协议，欢迎广大二次元与极客开发者贡献预设样式与优化建议！
+
+## 快速运行（Windows 10/11 x64）
+
+**前置**：Node.js 22+（官方签名版，加入 PATH）；.NET 8 Desktop Runtime（Cherry 的 UIA 桥需要）；Windows PowerShell 5.1（系统自带）。
+
+1. 编译总控台：双击 `src/DreamSkinMaster/build.bat`，生成 `DreamSkinMaster.exe`（放在原目录即可，它会自动向上找到 `src/`）。
+2. **Cherry Studio**：先打开 Cherry，进入 设置 → 外观（自定义 CSS 所在页），窗口不要最小化；再在总控台选预设/壁纸，点「应用」。
+   - 命令行等价：`node src/cherry/apply-cherry.mjs --preset cyber-blue --image D:\wall.jpg`
+   - 还原：`node src/cherry/restore-cherry.mjs`
+   - 预设：`dark-gold` `cyber-blue` `teal-tech` `anime-purple` `warm-cream`；壁纸 ≤ 1.5 MB（JPG/PNG/WebP）
+   - 首次换肤前的原 CSS 会备份到 `%LOCALAPPDATA%\DreamSkin\cherry\original-before-dream-skin.css`
+3. **ZCode**：总控台点「启动 ZCode 换肤」，实际调用 `src/zcode/payload/scripts/start-zcode-dream-skin.ps1`；还原调用 `restore-zcode-dream-skin.ps1`。
+
+**可选环境变量**：`DREAMSKIN_DATA_DIR`（Cherry 工件目录）、`DREAMSKIN_CHERRY_BRIDGE`（自编译的 CherryUiBridge.exe 路径）、`DREAMSKIN_CHERRY_VERSION`（强制指定 Cherry 版本前缀）。
+
+**重新编译 UIA 桥**：`dotnet build src/cherry/CherryUiBridge -c Release`（FlaUI 依赖已放在 `src/cherry/vendor/flaui/lib`）。
+
